@@ -4,7 +4,7 @@
 \alias{make_input}
 \title{Make input data}
 \usage{
-make_input(input_dir, tumorID, sex)
+make_input(input_dir, tumorID, sex, use.physical.length = FALSE)
 }
 \arguments{
 \item{input_dir}{Input directory where \if{html}{\out{<tumorID>}}.modelFinal.seg, \if{html}{\out{<tumorID>}}.hets.tsv and
@@ -12,7 +12,10 @@ make_input(input_dir, tumorID, sex)
 
 \item{tumorID}{Sample ID of tumor.}
 
-\item{sex}{female, male or a filename that contains a word, female or male.
+\item{sex}{female, male or a filename that contains a word, female or male.}
+
+\item{use.physical.length}{use physical segment lengths to calculate proportional lengths.
+By default (FALSE), number of targets is used.
 If missing, sex is assumed to be male and only autosomes are analyzed.}
 }
 \value{
@@ -21,6 +24,7 @@ A list containing:
 \item tumorID.
 \item sex.
 \item rbd, input for the SCNA calling.
+\item config, A list of configuration parameters.
 \item cnv.nohets, segments without heterozygous sites.
 \item crs, copy ratio data used for plotting.
 \item segs, segmentation result from GATK where seg.id has been added and
