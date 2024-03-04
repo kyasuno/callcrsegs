@@ -75,7 +75,8 @@ plot_RvsHDS <- function(res, tumorID, min.prev=0.2, max.size=20) {
                      paste(round(res$prevalence$prevalence, 2), collapse=", "),
                      round(res$est.ploidy, 2),
                      res$deviation,
-                     nSCNAs))
+                     nSCNAs)),
+      x="R", y="HDS"
     ) +
     theme(title=element_text(size=10))
   p
