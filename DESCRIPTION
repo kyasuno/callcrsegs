@@ -29,5 +29,5 @@ Imports:
 	RColorBrewer,
 	wesanderson
 Depends: 
-    R (>= 4.3.2)
+    R (>= 4.3.0)
 LazyData: true
