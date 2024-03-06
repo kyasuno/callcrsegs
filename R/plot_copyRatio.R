@@ -95,7 +95,10 @@ plot_copyRatio <- function(res, centromere.hg38, hg38.seqinfo, crs=NULL, segs=NU
   if (!is.null(segs)) {
     segs <- segs |> dplyr::filter(seqnames %in% GenomeInfoDb::seqlevels(hg38.seqinfo))
     segs.genome <- get_genomic_coord(segs, hg38.seqinfo, space.skip=space.skip)
-    segs <- segs.genome$data
+    segs <- segs.genome$data |>
+      dplyr::mutate(
+        lrr=dplyr::if_else(2^lrr > ymax, log2(ymax), lrr)
+      )
     p <- p +
       geom_rect(
         data=segs,

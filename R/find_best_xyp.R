@@ -14,8 +14,20 @@ find_best_xyp <- function(cfg, lrr, hds, p=NULL) {
 
   na.out <- tibble::tibble(x=1L, y=1L, p=NA_real_, dist=NA_real_,
                    lrr.pred=0.0, hds.pred=0.0)
-
   if (is.na(hds)) {
+    return(na.out)
+  }
+
+  ### 1) Force AB genotype when the data falls within
+  ## 0.6 (prevalence 0.4 of hom del) < R < 1.4 (prevalence of 0.4 of AABB) and
+  ## 0 <= hds < 0.05
+  ## to be AB
+  ## tau/2 = (x+y)*p/2 + (1-p):
+  ## x=y=0: 1 - p, x=y=2: 2p + 1 - p = 1 + p
+  cn.lrr.min <- log2( 1 - cfg$min.prev.hom )
+  cn.lrr.max <- log2( 1 + cfg$min.prev.hom )
+  isCN <- lrr > cn.lrr.min & lrr < cn.lrr.max & hds >= 0 & hds < 0.05
+  if (isCN) {
     return(na.out)
   }
 
@@ -113,7 +125,6 @@ find_best_xyp <- function(cfg, lrr, hds, p=NULL) {
       )
     })
   }
-  out <- out |> dplyr::filter(dist == min(dist))
 
   ###!!!
   ### xypGrid contains degenerate (i.e. indistinguishable) states in terms of expected
@@ -142,15 +153,15 @@ find_best_xyp <- function(cfg, lrr, hds, p=NULL) {
   # out <- subset(out,
   #               (lrr < 0.1 & dist < cfg$max.distL) | (lrr>=0.1 & dist < cfg$max.distR))
 
+  ##!!! need to change this filtering step
 
-  ### 1) Remove cnv states that are closest to the selected (by cfg$min.prev) root of the branch.
-  ### 2) We often see the noise in the copy ratios without showing LOH. Remove homozygous losses or
-  ### balanced amplification if prevalence is too low (< cfg$min.prev.hom = 0.3-0.4).
-
-  out <- out |> dplyr::filter(p > cfg$min.prev)
-  if (nrow(out) > 0) {
-    out <- out |> dplyr::filter(!(x != 1 & x == y & p < cfg$min.prev.hom))
-  }
+  ### 2) Select nearest branch
+  # there are some cases where observed values are
+  # inbetween two branches.
+  # AAAABBBBB vs. AABB/AAABBB...
+  # B[k] vs. ABB/ABBB ....
+  # later we will choose the branch with minimum of y, which equivalently choose the one with higher prevalence
+  out <- out |> dplyr::filter(dist <= min(dist) + cfg$best.tol)
 
   if (nrow(out) == 0) {
     return(na.out)

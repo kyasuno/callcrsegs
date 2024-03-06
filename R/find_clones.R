@@ -102,27 +102,22 @@ find_clones <- function(rbd.adj, cfg, pladj) {
   n_ambi <- nrow(ambiguous)
   if (n_ambi == 0) {
     message("find_clones: Use identifiable states to determine clones (no unidentifiable states).")
-    is.ambi <- FALSE
-  }
-  if (n_ambi > 0 & n_uniq == 0) {
+  } else if (n_ambi > 0 & n_uniq == 0) {
     message("find_clones: There is no informative segment without including unidentifiable states. ",
             "Use the unidentifiable states.")
-    is.ambi <- TRUE
-  }
-  if (n_ambi > 0 & n_uniq > 0) {
-    if (cfg$high.purity && max(uniqstates$p) < cfg$lowest.purity) {
+  } else if (n_ambi > 0 & n_uniq > 0) {
+    if (max(uniqstates$p) < cfg$lowest.purity) {
       message("find_clones: Highest prevalence (", round(max(uniqstates$p), digits=3),
               ") is lower than required purity: ", cfg$lowest.purity, ". ",
               "Use also unidentifiable states.")
-      # is.ambi <- TRUE
     } else if (!cfg$useABB) {
       message("find_clones: Use only identifiable states to determine clones (unidentifiable states are discarded).")
-      is.ambi <- FALSE
       rbd.scna.large <- uniqstates
     } else if (cfg$useABB) {
       message("find_clones: Use both identifiable and unidentifiable states to determine clones.")
-      is.ambi <- TRUE
     }
+  } else {
+    stop("find_clones: Something went wrong")
   }
 
   if (nrow(rbd.scna.large) == 1) {

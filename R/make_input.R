@@ -158,7 +158,12 @@ make_input <- function(input_dir, tumorID, sex, use.physical.length=FALSE) {
                    # maximum distance allowed by find_clones (changed from find_best_xyp)
                    # max.distL = 0.06,
                    # max.distR = 0.03,
-                   # best.tol = 0.005,
+                   # there are some cases where observed values are
+                   # inbetween two branches.
+                   # AAAABBBBB vs. AABB/AAABBB...
+                   # B[k] vs. ABB/ABBB ....
+                   #
+                   best.tol = 0.0025,
                    # selection criteria for segments used to identify clones
                    root.hdsInt=0.075, #0.05,
                    root.rInt=log2(1.175), # 0.3,
@@ -168,7 +173,7 @@ make_input <- function(input_dir, tumorID, sex, use.physical.length=FALSE) {
                    min.prev.hom=0.4, # this is used in find_clones to exclude "noise" segments
                    # find_clones: whether we use unidentifiable ABB[.|B|BB|BBB] segments
                    useABB=TRUE,
-                   high.purity=TRUE,
+                   #high.purity=TRUE,
                    lowest.purity=0.4,
                    # find_clones: use best xyp
                    useBestXYP=TRUE,

@@ -47,9 +47,14 @@ plot_ASCN <- function(res, centromere.hg38, hg38.seqinfo,
       x.adj=x - baseline.adj
     ) |>
     dplyr::mutate(
+      y.adj=dplyr::if_else(y > floor(ymax), ymax, y.adj),
+      x.adj=dplyr::if_else(x > floor(ymax), ymax - 2*baseline.adj, x.adj)
+    ) |>
+    dplyr::mutate(
       # p = if_else(x == 1 & y == 1 & p == 1, main.prev, p)
       prevalence = dplyr::if_else(x == 1 & y == 1, main.prev, prevalence)
     )
+
 
   ## convert chromosomal coordinates to genomic coordinates
   d.genome <- get_genomic_coord(d, hg38.seqinfo, space.skip=space.skip)

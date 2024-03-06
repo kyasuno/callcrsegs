@@ -23,8 +23,7 @@ plot_RvsHDS <- function(res, tumorID, min.prev=0.2, max.size=20) {
       bubble.size = pmin(seg.size * zoom.size, max.size)
     ) |>
     dplyr::mutate(
-      SCNAchromosome=as.character(seqnames),
-      SCNAchromosome=dplyr::if_else(x == 1 & y == 1, "CN", SCNAchromosome)
+      SCNAchromosome=as.character(seqnames)
     )
 
   if (ploidy.adj["ploidy"] == 2) {
@@ -52,13 +51,29 @@ plot_RvsHDS <- function(res, tumorID, min.prev=0.2, max.size=20) {
     dplyr::mutate(
       SCNAchromosome=factor(SCNAchromosome, levels=c(chroms, "CN"))
     ) |>
-    arrange(desc(SCNAchromosome))
+    dplyr::arrange(desc(SCNAchromosome))
 
-  nSCNAs <- d |> dplyr::filter(!(x == 1 & y == 1)) |> nrow()
+  # nSCNA is different between assumed ploidy
+  if (res$ploidy.adj["ploidy"] == 2) {
+    nSCNAs <- res$result |> dplyr::filter(!(x == 1 & y == 1)) |> nrow()
+  } else if (res$ploidy.adj["ploidy"] == 3) {
+    nSCNAs <- res$result |> dplyr::filter(!(x == 1 & y == 2) & !is.na(p)) |> nrow()
+  } else if (res$ploidy.adj["ploidy"] == 4) {
+    nSCNAs <- res$result |> dplyr::filter(!(x == 2 & y == 2) & !is.na(p)) |> nrow()
+  }
+
+  nOut <- sum(2^d$lrr > max(3, max.cn/2))
+  if (nOut == 0) {
+    captext <- ""
+  } else if (nOut == 1) {
+    captext <- paste0(nOut, " event with R > ", max(3, max.cn/2), " is not shown")
+  } else {
+    captext <- paste0(nOut, " events with R > ", max(3, max.cn/2), " are not shown")
+  }
 
   p <- plot_xypGrid(max.ploidy=max(6, max.cn), min.prev=min.prev)
   p <- p +
-    geom_point(data=d |> dplyr::filter(2^lrr < max(6,max.cn)/2),
+    geom_point(data=d |> dplyr::filter(2^lrr <= max(3, max.cn/2)),
                aes(x=2^lrr, y=hds, size=bubble.size, fill=SCNAchromosome),
                shape=21, alpha=0.75,
                inherit.aes=FALSE) +
@@ -76,6 +91,7 @@ plot_RvsHDS <- function(res, tumorID, min.prev=0.2, max.size=20) {
                      round(res$est.ploidy, 2),
                      res$deviation,
                      nSCNAs)),
+      caption=captext,
       x="R", y="HDS"
     ) +
     theme(title=element_text(size=10))
