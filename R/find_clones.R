@@ -24,7 +24,8 @@ find_clones <- function(rbd.adj, cfg, pladj) {
     rbd.dist <- rbd.dist |>
       dplyr::mutate(
         cloneID=NA_integer_,
-        prevalence=NA_real_
+        prevalence=NA_real_,
+        usedForCloneEst=FALSE
       )
     return(list(prevalence=prev, result=rbd.dist))
   }
@@ -42,14 +43,16 @@ find_clones <- function(rbd.adj, cfg, pladj) {
     rbd.dist <- rbd.dist |>
       dplyr::mutate(
         cloneID=NA_integer_,
-        prevalence=NA_real_
+        prevalence=NA_real_,
+        usedForCloneEst=FALSE
       )
     return(list(prevalence=prev, result=rbd.dist))
   }
 
-  ### Exclude segments with large distance from any branches or copy ratio is too high
+  ### Exclude segments with large distance from any branches, those copy ratio being too high,
+  ### or p = min.prev
   rbd.scna.large <- rbd.scna.large |>
-    dplyr::filter(dist < 0.11 & lrr < log2(cfg$max.ploidy))
+    dplyr::filter(dist < 0.11, lrr < log2(cfg$max.ploidy), p > cfg$min.prev)
 
   if(nrow(rbd.scna.large) == 0) { # no prediction
     message("find_clones: There are no segments for which a copy number states are reliably predicted")
@@ -57,12 +60,13 @@ find_clones <- function(rbd.adj, cfg, pladj) {
     rbd.dist <- rbd.dist |>
       dplyr::mutate(
         cloneID=NA_integer_,
-        prevalence=NA_real_
+        prevalence=NA_real_,
+        usedForCloneEst=FALSE
       )
     return(list(prevalence=prev, result=rbd.dist))
   }
 
-  ### Although it is unclear whether the following filtering based on the copy number,
+  ### Although it is unclear the necessity of the following filtering based on the copy number,
   ### we include it. We can disable this by setting max.ploidy.clone = max.ploidy (default)
   if (cfg$max.ploidy.clone < cfg$max.ploidy) {
     high.cn.segs <- rbd.scna.large |> dplyr::filter( x + y > cfg$max.ploidy.clone)
@@ -126,24 +130,27 @@ find_clones <- function(rbd.adj, cfg, pladj) {
       dplyr::mutate(cloneID=1L, prevalence=round(p, digits=6))
   } else {
     # prevalence is calculated as BubbleTree did (weighted.mean). Not limma:weighted.median
-    mem <- cutree(hclust(dist(rbd.scna.large$p)), h=cfg$cutree.h)
+    # mem <- cutree(hclust(dist(rbd.scna.large$p)), h=cfg$cutree.h)
+    # rbd.scna.large <- rbd.scna.large |>
+    #   dplyr::mutate(tmpID=mem)
+    # prev <- rbd.scna.large |>
+    #   dplyr::group_by(tmpID) |>
+    #   dplyr::summarise(
+    #     prevalence=weighted.mean(p, seg.size) |> round(digits=6)
+    #   ) |>
+    #   dplyr::arrange(desc(prevalence)) |>
+    #   dplyr::mutate(cloneID=1:dplyr::n())
+    # rbd.scna.large <- rbd.scna.large |>
+    #   dplyr::left_join(prev, by="tmpID") |>
+    #   dplyr::select(-tmpID)
+    # prev <- prev |> dplyr::select(cloneID, prevalence)
+    clones <- .get_clones(rbd.scna.large$p, rbd.scna.large$seg.size, rbd.scna.large$seg.id, cfg$cutree.h) |>
+      dplyr::select(seg.id, cloneID, prevalence) |>
+      dplyr::mutate(prevalence=round(prevalence, digits=6))
     rbd.scna.large <- rbd.scna.large |>
-      dplyr::mutate(tmpID=mem)
-    prev <- rbd.scna.large |>
-      dplyr::group_by(tmpID) |>
-      dplyr::summarise(
-        prevalence=weighted.mean(p, seg.size) |> round(digits=6)
-      ) |>
-      dplyr::arrange(desc(prevalence)) |>
-      dplyr::mutate(cloneID=1:dplyr::n())
-    rbd.scna.large <- rbd.scna.large |>
-      dplyr::left_join(prev, by="tmpID") |>
-      dplyr::select(-tmpID)
-    prev <- prev |> dplyr::select(cloneID, prevalence)
+      dplyr::left_join(clones, by="seg.id")
+    prev <- clones |> dplyr::select(cloneID, prevalence) |> unique()
   }
-  ## prevalence is rounded to be consistent with find_best_xyp
-  prev <- prev |>
-    dplyr::mutate(prevalence=round(prevalence, digits=6))
 
   ## find nearest clone for remaining segments
   rbd.scna.other <- rbd.scna |>
@@ -167,7 +174,9 @@ find_clones <- function(rbd.adj, cfg, pladj) {
     rbd.scna <- rbd.scna.large
   }
   rbd.dist <- rbd.dist |>
-    dplyr::left_join(rbd.scna |> dplyr::select(seg.id, cloneID, prevalence), by="seg.id")
+    dplyr::left_join(rbd.scna |> dplyr::select(seg.id, cloneID, prevalence), by="seg.id") |>
+    dplyr::mutate(usedForCloneEst=seg.id %in% rbd.scna.large$seg.id)
+
 
   ## Now recalculate the SCNA states given the prevalence (following BubbleTree)
 
@@ -200,8 +209,49 @@ find_clones <- function(rbd.adj, cfg, pladj) {
     )
 
   rbd.dist <- rbd.dist |>
-     dplyr::select(seg.id:seg.size, x:hds.pred, cloneID, prevalence, everything())
+     dplyr::select(seg.id:seg.size, x:hds.pred, cloneID, prevalence, usedForCloneEst, everything())
 
 
   list(prevalence=prev, result=rbd.dist)
 }
+
+
+.get_clones <- function(p, seg.size, seg.id, cutree.h) {
+  odr <- order(p, decreasing=TRUE)
+  p <- p[odr]
+  seg.size <- seg.size[odr]
+  seg.id <- seg.id[odr]
+
+  out <- dplyr::tibble(
+    seg.id=seg.id, p=p, seg.size=seg.size, cloneID=NA_integer_, prevalence=NA_real_
+  )
+
+  n <- length(p)
+  cid <- 1L
+  i <- 1L
+  clusterIDs <- rep(NA_integer_, n)
+  clusterIDs[1L] <- cid
+  wp <- p[1L]
+  while (i < n) {
+    if (wp - p[i+1L] < cutree.h) {
+      clusterIDs[i+1] <- cid
+      use <- !is.na(clusterIDs) & clusterIDs == cid
+      wp <- weighted.mean(p[use], seg.size[use])
+    } else {
+      # record the prevalence for the current cluster
+      use <- !is.na(clusterIDs) & clusterIDs == cid
+      out$prevalence[use] <- wp
+      cid <- cid + 1L
+      clusterIDs[i+1L] <- cid
+      wp <- p[i+1L]
+    }
+    if (i == n - 1L) {
+      use <- !is.na(clusterIDs) & clusterIDs == cid
+      out$prevalence[use] <- wp
+    }
+    i <- i + 1L
+  }
+  out$cloneID <- clusterIDs
+  return(out)
+}
+

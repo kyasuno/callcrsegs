@@ -84,13 +84,13 @@ plot_RvsHDS <- function(res, tumorID, min.prev=0.2, max.size=20) {
     ) +
     labs(
       fill="SCNA\nChromosome",
-      title=paste0(tumorID, "\n",
-                   sprintf(
-                     "Purity: %s\nPloidy: %3.1f; Deviation: %4.2f; nSCNAs: %3.0f",
-                     paste(round(res$prevalence$prevalence, 2), collapse=", "),
-                     round(res$est.ploidy, 2),
-                     res$deviation,
-                     nSCNAs)),
+      title= paste0(tumorID, "\n",
+                    sprintf(
+                      "Purity: %s\nPloidy: %3.1f; Deviation: %6.4f; nSCNAs: %3.0f",
+                      paste(round(res$prevalence$prevalence, 2), collapse=", "),
+                      round(res$est.ploidy, 2),
+                      res$deviation,
+                      nSCNAs)),
       caption=captext,
       x="R", y="HDS"
     ) +

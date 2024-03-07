@@ -12,7 +12,7 @@
 #' @export
 #'
 plot_ASCN <- function(res, centromere.hg38, hg38.seqinfo,
-                       min.prev=0.20, ymax=4.3, baseline.adj=0.05, space.skip=0.005) {
+                       min.prev=0.20, ymax=4.5, baseline.adj=0.05, space.skip=0.005) {
   cols <- RColorBrewer::brewer.pal(7,"Set1")
 
   # check if the sample is female by looking at chrX segments

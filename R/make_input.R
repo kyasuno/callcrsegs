@@ -148,6 +148,7 @@ make_input <- function(input_dir, tumorID, sex, use.physical.length=FALSE) {
               list(max.ploidy=max.ploidy,
                    max.ploidy.clone=max.ploidy,
                    # parameters for get_ploidy_adjustment
+                   use.seg.median.for.center=FALSE,
                    centralSegInterval = log2(1.1), # central segments: abs(lrr) < 0.1 or (abs(lrr - all.seg.mean) < 0.1)
                    uc.hds.cutoff = 0.07,     # upper central segments: subset of central segments with hds > uc.hds.cutoff
                    uc.cov.cutoff = 0.5,      # minimum coverage of upper central segments required for triploidy

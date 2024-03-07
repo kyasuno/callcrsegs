@@ -34,7 +34,17 @@ get_ploidy_adjustment <- function(rbd, cfg) {
   #   central.segs <- subset(rbd, abs(lrr - all.seg.mean) < centralSegInterval)
   # }
 
-  central.segs <- rbd |> dplyr::filter(abs(lrr) < centralSegInterval)
+  if (cfg$use.seg.median.for.center) { ### better to turn it on especially when the data is noisy
+    if (abs(all.seg.mean) > 0.3) { ### we need this condition
+      central.segs <- rbd |> dplyr::filter(abs(lrr) < centralSegInterval)
+      all.seg.mean <- with(central.segs, limma::weighted.median(lrr, seg.size, na.rm=TRUE))
+    } else {
+      central.segs <- rbd |> dplyr::filter(abs(lrr - all.seg.mean) < centralSegInterval)
+    }
+  } else {
+    central.segs <- rbd |> dplyr::filter(abs(lrr) < centralSegInterval)
+  }
+
   if (nrow(central.segs) == 0) {
     #!!!
     #!!! do something: should we stop here?
@@ -64,7 +74,7 @@ get_ploidy_adjustment <- function(rbd, cfg) {
 
   ### coverage of low HDS (< 0.15) segments
   low.hds <- with(rbd, sum(seg.size[!is.na(hds) & hds < lowHds.cutoff])) / total.size
-  has.high.hds <- with(rbd, sum(seg.size > 0.01 & !is.na(hds) & hds >= lowHds.cutoff)) > 0
+  has.high.hds <- with(rbd, sum(seg.size > cfg$min.segSize & !is.na(hds) & hds >= lowHds.cutoff)) > 0
 
   ### determine purity only when ploidy = 3. Otherwise, set NA
   ### replaced hard coded value of 0.5 by uc.cov.cutoff
@@ -89,8 +99,12 @@ get_ploidy_adjustment <- function(rbd, cfg) {
     # also check the new central stages to make the fine adjustment
     # central.segs.new <- subset(rbd, abs(lrr + log2(adj)-all.seg.mean) < centralSegInterval)
     # change the above not to use all.seg.mean
+    if (cfg$use.seg.median.for.center) {
+      central.segs.new <- rbd |> dplyr::filter(abs(lrr + log2(adj) - all.seg.mean) < centralSegInterval)
+    } else {
+      central.segs.new <- rbd |> dplyr::filter(abs(lrr + log2(adj)) < centralSegInterval)
+    }
 
-    central.segs.new <- rbd |> dplyr::filter(abs(lrr + log2(adj)) < centralSegInterval)
     if (nrow(central.segs.new) > 0 ) { # unlikely to exist
       adj <-  with(central.segs.new, 2^(-limma::weighted.median(lrr, seg.size, na.rm=TRUE)))
     }

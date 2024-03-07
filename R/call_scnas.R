@@ -86,7 +86,7 @@ call_scnas <- function(rbd, config, sex) {
         seg.id:width,
         seg.size, num.mark, num.hets, hds.cnt,
         lrr10, lrr50, lrr, lrr90, hds10:hds90,
-        x:prevalence, x0:hds.pred0, hds.median:hds.sd
+        x:prevalence, usedForCloneEst, x0:hds.pred0, hds.median:hds.sd
       )
   } else {
     result <- clones$result |>
@@ -95,7 +95,7 @@ call_scnas <- function(rbd, config, sex) {
         seg.id:width,
         seg.size, num.mark, num.hets, hds.cnt,
         lrr10, lrr50, lrr, lrr90, hds10:hds90,
-        x:prevalence, everything()
+        x:prevalence, usedForCloneEst, everything()
       )
   }
 
