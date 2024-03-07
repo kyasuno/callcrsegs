@@ -59,7 +59,8 @@ call_scnas <- function(rbd, config, sex) {
       pladj4 <- pladj
 
       pladj4["adj"] <- pladj4["adj"] * new.adj
-      rbd.adj4 <- lst$rbd |> dplyr::mutate(lrr=lrr+log2(pladj4["adj"]))
+      # bug fix lst$rbd must be rbd
+      rbd.adj4 <- rbd |> dplyr::mutate(lrr=lrr+log2(pladj4["adj"]))
       clones4 <- find_clones(rbd.adj=rbd.adj4, cfg=config, pladj=pladj4)
       p <- clones4$prevalence$prevalence
       if (any(!is.na(p))) {

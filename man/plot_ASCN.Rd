@@ -9,7 +9,7 @@ plot_ASCN(
   centromere.hg38,
   hg38.seqinfo,
   min.prev = 0.2,
-  ymax = 4.3,
+  ymax = 4.5,
   baseline.adj = 0.05,
   space.skip = 0.005
 )
