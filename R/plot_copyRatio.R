@@ -97,6 +97,7 @@ plot_copyRatio <- function(res, centromere.hg38, hg38.seqinfo, crs=NULL, segs=NU
     segs.genome <- get_genomic_coord(segs, hg38.seqinfo, space.skip=space.skip)
     segs <- segs.genome$data |>
       dplyr::mutate(
+        lrr=lrr + log2(ploidy.adj["adj"]),
         lrr=dplyr::if_else(2^lrr > ymax, log2(ymax), lrr)
       )
     p <- p +

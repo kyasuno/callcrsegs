@@ -47,8 +47,8 @@ plot_ASCN <- function(res, centromere.hg38, hg38.seqinfo,
       x.adj=x - baseline.adj
     ) |>
     dplyr::mutate(
-      y.adj=dplyr::if_else(y > floor(ymax), ymax, y.adj),
-      x.adj=dplyr::if_else(x > floor(ymax), ymax - 2*baseline.adj, x.adj)
+      y.adj=dplyr::if_else(y > floor(ymax), ymax-0.05, y.adj),
+      x.adj=dplyr::if_else(x > floor(ymax), ymax - 2*baseline.adj - 0.05, x.adj)
     ) |>
     dplyr::mutate(
       # p = if_else(x == 1 & y == 1 & p == 1, main.prev, p)
