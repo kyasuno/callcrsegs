@@ -107,6 +107,11 @@ make_input <- function(input_dir, tumorID, sex, use.physical.length=FALSE) {
       start=cnv.start, end=cnv.end
     )
 
+  if (sex == "male") {
+    rbd <- rbd |>
+      dplyr::filter(seqnames != "chrX")
+  }
+
   ## percentage of the length (%) in terms of the number of targets
   if (use.physical.length) {
     rbd <- rbd |>
