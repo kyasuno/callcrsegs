@@ -57,9 +57,9 @@ plot_RvsHDS <- function(res, tumorID, min.prev=0.2, max.size=20) {
   if (res$ploidy.adj["ploidy"] == 2) {
     nSCNAs <- res$result |> dplyr::filter(!(x == 1 & y == 1)) |> nrow()
   } else if (res$ploidy.adj["ploidy"] == 3) {
-    nSCNAs <- res$result |> dplyr::filter(!(x == 1 & y == 2) & !is.na(p)) |> nrow()
+    nSCNAs <- res$result |> dplyr::filter(!(x == 1 & y == 2)) |> nrow()
   } else if (res$ploidy.adj["ploidy"] == 4) {
-    nSCNAs <- res$result |> dplyr::filter(!(x == 2 & y == 2) & !is.na(p)) |> nrow()
+    nSCNAs <- res$result |> dplyr::filter(!(x == 2 & y == 2)) |> nrow()
   }
 
   nOut <- sum(2^d$lrr > max(3, max.cn/2))

@@ -60,6 +60,7 @@ call_scnas <- function(rbd, config, sex) {
 
       pladj4["adj"] <- pladj4["adj"] * new.adj
       # bug fix lst$rbd must be rbd
+      message("call_scna: re-running find_clones for ploidy = 4.")
       rbd.adj4 <- rbd |> dplyr::mutate(lrr=lrr+log2(pladj4["adj"]))
       clones4 <- find_clones(rbd.adj=rbd.adj4, cfg=config, pladj=pladj4)
       p <- clones4$prevalence$prevalence

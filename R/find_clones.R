@@ -12,7 +12,7 @@
 find_clones <- function(rbd.adj, cfg, pladj) {
 
   ### find the best SCNA state for each segment
-  rbd.dist <- get_scna_states(rbd.adj, cfg)
+  rbd.dist <- get_scna_states(rbd.adj=rbd.adj, cfg=cfg)
 
   ### remove segments that are likely to be in a copy-neutral normal state
   ### (for tri/tetra-ploidy cases, they are SCNAs but not informative for prevalence)
