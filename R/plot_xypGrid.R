@@ -25,9 +25,9 @@ plot_xypGrid <- function(max.ploidy, min.prev) {
   lv <- label_data |> dplyr::filter(rx == max.ploidy / 2 | hx == 0 | hx == 0.5)
   lh <- label_data |> dplyr::filter(!(rx == max.ploidy / 2 | hx == 0 | hx == 0.5))
   xypGrid |>
-    dplyr::filter(p %in% c(0.2, 0.4, 0.6, 0.8, 1)) |>
+    dplyr::filter(p %in% unique(c(min.prev, 0.2, 0.4, 0.6, 0.8, 1))) |>
     ggplot(aes(x=R.pred, y=hds.pred, group=GT)) +
-    theme_minimal(base_size=12) +
+    theme_minimal(base_size=10) +
     geom_text(aes(label=Prev), size=7/.pt, colour="black") +
     geom_line(linetype="dotted", colour="gray") +
     geom_text(data=lv, aes(label=GT), size=7/.pt) +

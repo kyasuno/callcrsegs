@@ -152,7 +152,7 @@ find_clones <- function(rbd.adj, cfg, pladj) {
     prev <- clones |> dplyr::select(cloneID, prevalence) |> unique()
   }
 
-  ## find nearest clone for remaining segments
+  ## find the nearest clone for remaining segments
   rbd.scna.other <- rbd.scna |>
     dplyr::filter(!(seg.id %in% rbd.scna.large$seg.id))
   if (nrow(rbd.scna.other) > 0) {
@@ -179,6 +179,7 @@ find_clones <- function(rbd.adj, cfg, pladj) {
 
 
   ## Now recalculate the SCNA states given the prevalence (following BubbleTree)
+  ## This will call suboptimal SCNA states.
 
   if (pladj["ploidy"] == 3) {
     # add presumed prevalence if it is much higher than the estimated purity (max. prevalence)

@@ -19,6 +19,7 @@
 #' @export
 #'
 call_scnas <- function(rbd, config, sex) {
+  # make_input has already removed chrX for male samples
   if (sex == "male") {
     rbd <- rbd |> dplyr::filter(seqnames != "chrX")
   }
@@ -31,11 +32,8 @@ call_scnas <- function(rbd, config, sex) {
   ## there is no low-prevalence tumor subpopulation (p < 0.5),
   ## BubbleTree considers that ploidy of 2 should be the answer.
   ## It is unclear if it is reasonable.
-  ## We use different criteria
-  ## In get_ploidy_adjustment, we require that
-  ## low.hds > 0.9995,
-  ## no segment with seg.size > cfg$min.segSize and hds >= lowHds.cutoff, and
-  ## no upper right segment (like ABB) with seg.size > cfg$min.segSize
+  ## We use different criteria.
+
   ## In clones$result, check if there is any SCNAs of type B or BB with prevalence >= 0.3 and
   ## seg.size >= cfg$min.segSize. If there is none, we accept the tetraploidy.
 
@@ -43,37 +41,67 @@ call_scnas <- function(rbd, config, sex) {
     p <- clones$prevalence$prevalence
     if (is.na(p[1])) { # there is no candidate SCNA
       pladj["ploidy"] <- 2
-    } else if (all(p >= 0.4)) {
+    } else if (any(p >= 0.5)) { # there is any p >= 0.5
       pladj["ploidy"] <- 2
-    } else {
-      BorBB <- clones$result |>
-        dplyr::filter((x == 0 & y == 1) | (x == 0 & y == 2)) |>
-        dplyr::filter(p >= 0.3 & seg.size > config$min.segSize)
-      if (nrow(BorBB) > 0) {
-        pladj["ploidy"] <- 2
-      }
     }
-    # if the ploidy is still 4, shift lrr and find clones
+    # else {
+    #   BorBB <- clones$result |>
+    #     dplyr::filter((x == 0 & y == 1) | (x == 0 & y == 2)) |>
+    #     dplyr::filter(p >= 0.3 & seg.size > config$min.segSize)
+    #   if (nrow(BorBB) > 0) {
+    #     pladj["ploidy"] <- 2
+    #   }
+    # }
+    # if the ploidy is still 4,
     if (pladj["ploidy"] == 4) {
+      # shift lrr and find clones
       new.adj <- 1/(1-max(p))
       pladj4 <- pladj
 
       pladj4["adj"] <- pladj4["adj"] * new.adj
-      # bug fix lst$rbd must be rbd
       message("call_scna: re-running find_clones for ploidy = 4.")
       rbd.adj4 <- rbd |> dplyr::mutate(lrr=lrr+log2(pladj4["adj"]))
       clones4 <- find_clones(rbd.adj=rbd.adj4, cfg=config, pladj=pladj4)
-      p <- clones4$prevalence$prevalence
-      if (any(!is.na(p))) {
-        pladj4["purity"] <- max(p, na.rm=TRUE)
-        est.ploidy <- (2*pladj4["adj"] - 2) / pladj4["purity"] + 2
-        ## if estimated ploidy is significantly lower than 4, it is unlikely to be tetraploidy
-        if (est.ploidy < 3.6) {
-          pladj["ploidy"] <- 2
+
+      if (config$report.tetraploidy) {
+        message("call_scna: ploidy = 4 is reported.")
+        pladj <- pladj4
+        rbd.adj <- rbd.adj4
+        clones <- clones4
+      } else {
+        p <- clones4$prevalence$prevalence
+        if (any(!is.na(p))) {
+          pladj4["purity"] <- max(p, na.rm=TRUE)
+          est.ploidy <- (2*pladj4["adj"] - 2) / pladj4["purity"] + 2
+          ## if estimated ploidy is significantly lower than 4, it is unlikely to be tetraploidy
+          if (est.ploidy < 3.75) {
+            message("call_scna: ploidy = 2 is selected for low estimated ploidy than expected 4: ", round(est.ploidy, digits=4))
+            pladj["ploidy"] <- 2
+          } else {
+            ## check if lrr change is consistent with gain and loss (from AABB)
+            loss <- clones4$result |> dplyr::filter(x + y < 4)
+            if (nrow(loss) > 0) {
+              OK <- all(loss$lrr - pladj4["adj"] < 0)
+            } else {
+              OK <- TRUE
+            }
+            gain <- clones4$result |> dplyr::filter(x + y > 4)
+            if (nrow(gain) > 0) {
+              OK <- OK & all(gain$lrr - pladj4["adj"] > 0)
+            }
+            if (OK) {
+              message("call_scna: ploidy = 4 is selected.")
+              pladj <- pladj4
+              rbd.adj <- rbd.adj4
+              clones <- clones4
+            } else {
+              message("call_scna: ploidy = 2 is selected for inconsistent SCNA types.")
+              pladj["ploidy"] <- 2
+            }
+          }
         } else {
-          pladj <- pladj4
-          rbd.adj <- rbd.adj4
-          clones <- clones4
+          message("call_scna: ploidy = 2 is selected.")
+          pladj["ploidy"] <- 2
         }
       }
     }

@@ -94,6 +94,6 @@ plot_RvsHDS <- function(res, tumorID, min.prev=0.2, max.size=20) {
       caption=captext,
       x="R", y="HDS"
     ) +
-    theme(title=element_text(size=10))
+    theme(title=element_text(size=8))
   p
 }

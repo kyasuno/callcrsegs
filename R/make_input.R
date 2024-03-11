@@ -146,50 +146,42 @@ make_input <- function(input_dir, tumorID, sex, use.physical.length=FALSE) {
   config$xyGrid <- expand.grid(x=0:floor(max.ploidy/2), y=0:max.ploidy) |>
     tibble::as_tibble() |>
     dplyr::filter (x <= y & x+y <= max.ploidy) |>
-    #filter( ! (x==1 & y==1) ) |>
     unique()
-  # root.hdsInt and root.rInt corresponds to x=1, y=2, p=0.35
   config <- c(config,
               list(max.ploidy=max.ploidy,
                    max.ploidy.clone=max.ploidy,
                    # parameters for get_ploidy_adjustment
-                   use.seg.median.for.center=FALSE,
-                   centralSegInterval = log2(1.1), # central segments: abs(lrr) < 0.1 or (abs(lrr - all.seg.mean) < 0.1)
+                   use.seg.median.for.center=TRUE,
+                       # if TRUE, abs(lrr - all.seg.mean) < centralSegInterval while
+                       # if FALSE, abs(lrr) < centralSegInterval
+                   centralSegInterval = log2(1.1),
                    uc.hds.cutoff = 0.07,     # upper central segments: subset of central segments with hds > uc.hds.cutoff
                    uc.cov.cutoff = 0.5,      # minimum coverage of upper central segments required for triploidy
                    lowHds.cutoff = 0.15,     # define low HDS segments by hds < lowHds.cutoff
+                   frac.lowHDS.for.tetraploidy=0.95, # minimum proportion of low HDS segment for tetraploidy
                    # whether we consider triploidy and tetraploidy (get_ploidy_adjustment)
                    allow.triploidy=TRUE,
                    allow.tetraploidy=TRUE,
-                   # maximum distance allowed by find_clones (changed from find_best_xyp)
-                   # max.distL = 0.06,
-                   # max.distR = 0.03,
+                   report.tetraploidy=FALSE, # If TRUE, report tetraploidy result regardless of other conditions
                    # there are some cases where observed values are
                    # inbetween two branches.
                    # AAAABBBBB vs. AABB/AAABBB...
                    # B[k] vs. ABB/ABBB ....
-                   #
                    best.tol = 0.0025,
                    # selection criteria for segments used to identify clones
+                   # root.hdsInt and root.rInt corresponds to x=1, y=2, p=0.35
                    root.hdsInt=0.075, #0.05,
-                   root.rInt=log2(1.175), # 0.3,
+                   root.rInt=log2(1.175), # = 0.2326608 (BubbleTree: 0.3),
                    min.segSize = 0.01, # 0.5, # minimum segment size used for identifying clones
-                        # (this small number is necessary to detect chromothripsis and focal events)
-                   min.prev=0.2, # 0.15, # this is used in find_best_xyp, find_clones, ...
-                   min.prev.hom=0.4, # this is used in find_clones to exclude "noise" segments
-                   # find_clones: whether we use unidentifiable ABB[.|B|BB|BBB] segments
+                       # (this small number is necessary to detect chromothripsis and focal events)
+                   # required minimum prevalence to consider a segment as SCNA
+                   min.prev=0.2,
+                   min.prev.hom=0.2, # this can be used in find_clones to exclude "noise" segments as SCNAs (homozygous deletions and AABB)
+                   # find_clones: whether we use unidentifiable ABB[.|B|BB|BBB] or AABB/AAABBB segments
                    useABB=TRUE,
-                   #high.purity=TRUE,
-                   lowest.purity=0.4,
-                   # find_clones: use best xyp
-                   useBestXYP=TRUE,
-                   # clustering cutoff (complete linkage)
-                   cutree.h=0.2,
-                   #total.mark=NA,
-                   #cnv.gr=NULL,
-                   #max.hds.sd=0.3,
-                   #min.het.cnt = 20,
-                   verbose=TRUE
+                   lowest.purity=0.4, # if maximum purity is lower than this value, include unidentifiable state
+                   # clustering cutoff (complete linkage => .get_clones)
+                   cutree.h=0.2
                    )
   )
 

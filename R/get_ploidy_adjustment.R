@@ -22,20 +22,9 @@ get_ploidy_adjustment <- function(rbd, cfg) {
   all.seg.mean <- with(rbd, limma::weighted.median(lrr, seg.size, na.rm=TRUE))
 
   ### central segments
-  ###!!!
-  ### It is not reasonable to use lrr - all.seg.mean when there are large number of gains
-  ###!!!
-  # if (abs(all.seg.mean) > 0.3) {
-  #   # special abnormal case like 1500
-  #   central.segs <- subset(rbd, abs(lrr) < centralSegInterval)
-  #   all.seg.mean <- with(central.segs,
-  #                        limma::weighted.median(lrr, seg.size, na.rm=TRUE))
-  # } else {
-  #   central.segs <- subset(rbd, abs(lrr - all.seg.mean) < centralSegInterval)
-  # }
-
-  if (cfg$use.seg.median.for.center) { ### better to turn it on especially when the data is noisy
-    if (abs(all.seg.mean) > 0.3) { ### we need this condition
+  if (cfg$use.seg.median.for.center) {
+    ### better to turn it on especially when the data is noisy
+    if (abs(all.seg.mean) > log2(1.1)) { ### we need this condition (0.3 [BubbleTree] was not enough)
       central.segs <- rbd |> dplyr::filter(abs(lrr) < centralSegInterval)
       all.seg.mean <- with(central.segs, limma::weighted.median(lrr, seg.size, na.rm=TRUE))
     } else {
@@ -46,9 +35,6 @@ get_ploidy_adjustment <- function(rbd, cfg) {
   }
 
   if (nrow(central.segs) == 0) {
-    #!!!
-    #!!! do something: should we stop here?
-    #!!!
     warning("get_ploidy_adjustment: ",
             "There is no segment that can be used to define copy-neutral normal state.\n",
             "Shift factor of lrr is calculated by using all the segments and ploidy is assumed 2.")
@@ -74,11 +60,10 @@ get_ploidy_adjustment <- function(rbd, cfg) {
 
   ### coverage of low HDS (< 0.15) segments
   low.hds <- with(rbd, sum(seg.size[!is.na(hds) & hds < lowHds.cutoff])) / total.size
-  has.high.hds <- with(rbd, sum(seg.size > cfg$min.segSize & !is.na(hds) & hds >= lowHds.cutoff)) > 0
+  #has.high.hds <- with(rbd, sum(!is.na(hds) & hds >= lowHds.cutoff)) > 0
 
   ### determine purity only when ploidy = 3. Otherwise, set NA
   ### replaced hard coded value of 0.5 by uc.cov.cutoff
-  ###
   if (uc.cov > uc.cov.cutoff & uc.hds < 1/6 & cfg$allow.triploidy) {
 
     ### adj = ( ploidy * p + 2*(1 - p) ) / 2, where p = purity = max(prev)
@@ -108,7 +93,6 @@ get_ploidy_adjustment <- function(rbd, cfg) {
     if (nrow(central.segs.new) > 0 ) { # unlikely to exist
       adj <-  with(central.segs.new, 2^(-limma::weighted.median(lrr, seg.size, na.rm=TRUE)))
     }
-
   } else {
 
     ploidy <- 2
@@ -116,24 +100,18 @@ get_ploidy_adjustment <- function(rbd, cfg) {
     ### when ploidy = 2, we cannot estimate purity here
     purity <- NA
 
-    ###!!! Bug in BubbleTree: should use weighted.median !!!###
-    # lrr <- with(central.segs, weighted.mean(lrr, seg.size))
     lrr <- with(central.segs, limma::weighted.median(lrr, seg.size, na.rm=TRUE))
     adj <- 1 / 2^lrr
 
     ###!!!
     ### BubbleTree: ploidy = 4 when low.hds > 95% and
     ### the coverage of upper right segments (hds > 0.1 & 2^lrr > 1.25) < 1%
-    ### => we allow tetraploidy only when
-    ### the user wants to include tetraploidy case,
-    ### low.hds > 0.9995,
-    ### no segment with seg.size > cfg$min.segSize and hds >= lowHds.cutoff, and
-    ### no upper right segment (like ABB) with seg.size > cfg$min.segSize
     ###!!!
-    if ( low.hds > 0.9995 & !has.high.hds & cfg$allow.tetraploidy ) {
+    if ( low.hds > cfg$frac.lowHDS.for.tetraploidy & cfg$allow.tetraploidy ) {
       ### ABB, p = 0.35 (lrr.p = 1.175, hds.p = 0.07446809)
-      upright.segs <- rbd |> dplyr::filter(!is.na(hds), hds > 0.075 & 2^lrr > 1.175, seg.size >= cfg$min.segSize)
-      if (nrow(upright.segs) == 0) {
+      upright.segs <- rbd |> dplyr::filter(!is.na(hds), hds > 0.075 & 2^lrr > 1.175)
+      # if (nrow(upright.segs) == 0) {
+      if (sum(upright.segs$seg.size) < 1) { # same as bubbletree
         ploidy <- 4
       }
     }
@@ -141,6 +119,7 @@ get_ploidy_adjustment <- function(rbd, cfg) {
 
   ### output
   ploidy.adj <- c(
+    all.seg.median.R=2^all.seg.mean,
     upperCentral.cov = uc.cov,
     lowHDS.cov = low.hds,
     adj=adj,
