@@ -86,6 +86,12 @@ make_input <- function(input_dir, tumorID, sex, use.physical.length=FALSE) {
   ) |>
     tibble::as_tibble()
 
+  # For males, remove chrX segments
+  if (sex == "male") {
+    rbd <- rbd |>
+      dplyr::filter(seqnames != "chrX")
+  }
+
   # keep records of segments without heterozygous sites
   cnv.missing <- cnv.df |> dplyr::filter(!(seg.id %in% rbd$seg.id))
 
@@ -107,10 +113,6 @@ make_input <- function(input_dir, tumorID, sex, use.physical.length=FALSE) {
       start=cnv.start, end=cnv.end
     )
 
-  if (sex == "male") {
-    rbd <- rbd |>
-      dplyr::filter(seqnames != "chrX")
-  }
 
   ## percentage of the length (%) in terms of the number of targets
   if (use.physical.length) {
