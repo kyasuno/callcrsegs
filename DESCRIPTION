@@ -1,6 +1,6 @@
 Package: callcrsegs
 Title: Call SCNA states from GATK segmentation result
-Version: 0.2.0.0000
+Version: 0.2.1.0000
 Authors@R: 
     person("Katsuhito", "Yasuno", , "katsuhito.yasuno@yale.edu", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-3606-532X"))
