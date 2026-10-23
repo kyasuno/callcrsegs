@@ -2,9 +2,9 @@
 #'
 #' @param res result of [call_scnas].
 #' @param centromere.hg38 Use `data("centromere.hg38")`.
-#' @param hg38.seqinfo Use `data("centromere.hg38")`.
+#' @param hg38.seqinfo Use `data("hg38.seqinfo")`.
 #' @param crs denoised copy ratio data (seqnames, start, end, lrr).
-#' @param segs segment data (seqnames, start, end, lrr) that may include segments filtered by btpredict
+#' @param segs original segmentation data (seqnames, start, end, lrr) that may include segments filtered by [call_scnas].
 #' @param min.prev minimum prevalence (default: 0.2).
 #' @param ymax Maximum copy ratio (default: 3).
 #' @param baseline.adj Upward (y = n(B)) and downward (x = n(A)) shift of A and B allele (default: 0.1).

@@ -11,7 +11,8 @@ plot_HetLOH(
   hets = NULL,
   min.prev = 0.2,
   baseline.adj = 0.1,
-  space.skip = 0.005
+  space.skip = 0.005,
+  plot_observed = TRUE
 )
 }
 \arguments{
@@ -19,7 +20,7 @@ plot_HetLOH(
 
 \item{centromere.hg38}{Use \code{data("centromere.hg38")}.}
 
-\item{hg38.seqinfo}{Use \code{data("centromere.hg38")}.}
+\item{hg38.seqinfo}{Use \code{data("hg38.seqinfo")}.}
 
 \item{hets}{A tbl containing heterozygous site data (seqnames, start, end, freq).}
 
@@ -28,6 +29,8 @@ plot_HetLOH(
 \item{baseline.adj}{Upward (y = n(B)) and downward (x = n(A)) shift of A and B allele (default: 0.1).}
 
 \item{space.skip}{Space between chromosomes (default: 0.01)}
+
+\item{plot_observed}{logical. Whether observed BAFs should be ploted (default: TRUE)}
 }
 \value{
 A ggplot object

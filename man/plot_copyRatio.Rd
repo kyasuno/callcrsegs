@@ -21,11 +21,11 @@ plot_copyRatio(
 
 \item{centromere.hg38}{Use \code{data("centromere.hg38")}.}
 
-\item{hg38.seqinfo}{Use \code{data("centromere.hg38")}.}
+\item{hg38.seqinfo}{Use \code{data("hg38.seqinfo")}.}
 
 \item{crs}{denoised copy ratio data (seqnames, start, end, lrr).}
 
-\item{segs}{segment data (seqnames, start, end, lrr) that may include segments filtered by btpredict}
+\item{segs}{original segmentation data (seqnames, start, end, lrr) that may include segments filtered by \link{call_scnas}.}
 
 \item{min.prev}{minimum prevalence (default: 0.2).}
 

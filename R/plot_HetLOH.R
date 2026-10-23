@@ -2,18 +2,19 @@
 #'
 #' @param res result of [call_scnas].
 #' @param centromere.hg38 Use `data("centromere.hg38")`.
-#' @param hg38.seqinfo Use `data("centromere.hg38")`.
+#' @param hg38.seqinfo Use `data("hg38.seqinfo")`.
 #' @param hets A tbl containing heterozygous site data (seqnames, start, end, freq).
 #' @param min.prev minimum prevalence (default: 0.2).
 #' @param baseline.adj Upward (y = n(B)) and downward (x = n(A)) shift of A and B allele (default: 0.1).
 #' @param space.skip Space between chromosomes (default: 0.01)
+#' @param plot_observed logical. Whether observed BAFs should be ploted (default: TRUE)
 #' @returns A ggplot object
 #' @import ggplot2
 #' @export
 #'
 
 plot_HetLOH <- function(res, centromere.hg38, hg38.seqinfo, hets=NULL,
-                        min.prev=0.2, baseline.adj=0.1, space.skip=0.005) {
+                        min.prev=0.2, baseline.adj=0.1, space.skip=0.005, plot_observed = TRUE) {
 
   cols <- RColorBrewer::brewer.pal(8,"Dark2")
   col.p <- RColorBrewer::brewer.pal(8,"Paired")
@@ -78,15 +79,17 @@ plot_HetLOH <- function(res, centromere.hg38, hg38.seqinfo, hets=NULL,
   }
 
   ## observed BAF
-  p <- p +
-    geom_rect(
-      data=d,
-      aes(xmin=.start, xmax=.end, ymin=0.5 - hds - 0.01, ymax=0.5 - hds + 0.01),
-      colour=cols[2], fill=cols[2], na.rm=TRUE, inherit.aes=FALSE) +
-    geom_rect(
-      data=d,
-      aes(xmin=.start, xmax=.end, ymin = 0.5 + hds - 0.01, ymax=0.5 + hds + 0.01),
-      colour=cols[2], fill=cols[2], na.rm=TRUE, inherit.aes=FALSE)
+  if (plot_observed) {
+    p <- p +
+      geom_rect(
+        data=d,
+        aes(xmin=.start, xmax=.end, ymin=0.5 - hds - 0.01, ymax=0.5 - hds + 0.01),
+        colour=cols[2], fill=cols[2], na.rm=TRUE, inherit.aes=FALSE) +
+      geom_rect(
+        data=d,
+        aes(xmin=.start, xmax=.end, ymin = 0.5 + hds - 0.01, ymax=0.5 + hds + 0.01),
+        colour=cols[2], fill=cols[2], na.rm=TRUE, inherit.aes=FALSE)
+  }
 
   ## predicted BAF
   p <- p +
